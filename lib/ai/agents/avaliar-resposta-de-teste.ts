@@ -32,6 +32,7 @@
  * turnos com prompt de operador vazavam vocabulário interno para o cliente.
  */
 import { detectarVazamentoInterno } from "@/lib/agent-engine/guardrails/vazamento-interno";
+import { detectarAutonegaVenda } from "@/lib/agent-engine/guardrails/autonegacao";
 
 /** O que a checagem de texto encontrou na resposta de teste. */
 export interface AvaliacaoDaRespostaDeTeste {
@@ -84,11 +85,16 @@ export function avaliarRespostaDeTeste(texto: string | undefined): AvaliacaoDaRe
   // Sem texto não há o que avaliar, e afirmar "passou" seria o mesmo erro de
   // silêncio-que-parece-aprovação que este módulo existe para corrigir.
   const corpo = texto ?? "";
-  const achado = detectarVazamentoInterno(corpo);
+  const vazamento = detectarVazamentoInterno(corpo);
+  // A autonegação entra aqui pelo mesmo motivo do vazamento: é um gate de TEXTO
+  // puro, sem estado de turno, e é a trava que o dono pediu explicitamente —
+  // "isso tem que ter trava pra não sair nunca mais". Vê-la funcionando no botão
+  // Testar, antes de publicar, é o que prova que ela está armada.
+  const autonega = detectarAutonegaVenda(corpo);
   return {
-    passou: !achado.achou,
-    categorias: [...achado.categorias],
-    termos: [...achado.termos],
+    passou: !vazamento.achou && !autonega.achou,
+    categorias: [...vazamento.categorias, ...autonega.categorias],
+    termos: [...vazamento.termos],
     naoAvaliados: NAO_AVALIAVEIS_SEM_TURNO,
   };
 }

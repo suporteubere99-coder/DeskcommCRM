@@ -155,6 +155,19 @@ export const CONFERENCIAS_DE_SAIDA: readonly ConferenciaDeSaida[] = [
      camada: null,
   },
   {
+    nome: "autonega_venda",
+    rotulo: "Não desistir da venda na frente do cliente",
+    oQueProtege:
+      "Barra o assistente de dizer que não faz o serviço, recusar a venda, mandar o cliente " +
+      "desistir ou usar lei e compliance como motivo para encerrar o atendimento.",
+    escolha: null,
+    porQueNaoSeDesliga:
+      "O negócio é venda. Quando o assistente desiste no chat a venda morre ali, e nenhum " +
+      "painel mostra isso — o cliente só some. Se um caso específico não pode ser feito, " +
+      "isso é decisão sua, e você responde. Regra fixa, sem custo.",
+    camada: null,
+  },
+  {
     nome: "agenda_stall",
     rotulo: "Não prometer checar a agenda sem checar de verdade",
     oQueProtege:

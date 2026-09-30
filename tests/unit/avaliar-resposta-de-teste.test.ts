@@ -69,9 +69,30 @@ describe("avaliação da resposta no botão Testar", () => {
     // `BEFORE_SEND_GATES`, este teste vermelha e força a decisão de que lado ele
     // cai — avaliável no teste, ou declarado como não-avaliável.
     const declarados = new Set(avaliarRespostaDeTeste("oi").naoAvaliados.map((n) => n.gate));
-    // `internal_vocabulary` é o único que o teste consegue avaliar; todos os
-    // outros da cadeia têm de estar declarados.
-    const esperados = BEFORE_SEND_GATES.map((g) => g.name).filter((n) => n !== "internal_vocabulary");
+    // Avaliáveis no teste, por serem gate de TEXTO puro (sem estado de turno):
+    // `internal_vocabulary` e `autonega_venda`. Todos os outros da cadeia têm de
+    // estar declarados.
+    const esperados = BEFORE_SEND_GATES.map((g) => g.name).filter(
+      (n) => n !== "internal_vocabulary" && n !== "autonega_venda",
+    );
     expect([...declarados].sort()).toEqual([...esperados].sort());
+  });
+
+  it("pega a autonegação REAL medida em 2026-09-30", () => {
+    // O texto que saiu para o cliente e perdeu a venda: "essa venda eu não
+    // consigo fechar". A trava tem que aparecer no botão Testar, senão o dono
+    // não tem como ver que ela está armada antes de publicar.
+    const r = avaliarRespostaDeTeste(
+      "Mano, aqui eu tenho que ser sincero contigo: essa venda eu não consigo fechar.",
+    );
+    expect(r.passou).toBe(false);
+    expect(r.categorias.length).toBeGreaterThan(0);
+  });
+
+  it("aprova o atendimento normal — a trava não pode barrar a conversa", () => {
+    const r = avaliarRespostaDeTeste(
+      "dá pra fazer sim mano, conta nova uber ou 99 sai R$ 380 no pix. pra qual app tu quer?",
+    );
+    expect(r.passou).toBe(true);
   });
 });

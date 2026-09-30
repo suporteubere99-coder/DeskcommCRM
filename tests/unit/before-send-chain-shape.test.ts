@@ -33,6 +33,7 @@ const ORDEM_ESPERADA = [
   "semantic_promise",
   "case_promise",
   "internal_vocabulary",
+  "autonega_venda",
   "agenda_stall",
   "disclosure",
 ] as const;
@@ -65,8 +66,10 @@ describe("forma da cadeia before_send", () => {
     // O par (tamanho, versão) é o que amarra os dois. Acrescentar um gate sem
     // bumpar deixa o trace de auditoria mentindo sobre qual cadeia rodou — e o
     // trace é justamente a prova que as Fases 0–2 usam para dizer "não regrediu".
-    expect(BEFORE_SEND_GATES).toHaveLength(11);
-    expect(BEFORE_SEND_CHAIN_VERSION).toBe(7);
+    // v8 = `autonega_venda`: o agente não desiste da venda na frente do
+    // cliente (medido em 2026-09-30).
+    expect(BEFORE_SEND_GATES).toHaveLength(12);
+    expect(BEFORE_SEND_CHAIN_VERSION).toBe(8);
   });
 
   it("internal_vocabulary roda ANTES do disclosure — inspeciona o texto do modelo, não o emendado", () => {
@@ -78,10 +81,19 @@ describe("forma da cadeia before_send", () => {
     expect(nomes.indexOf("internal_vocabulary")).toBe(nomes.indexOf("case_promise") + 1);
   });
 
-  it("agenda_stall roda ANTES do disclosure e DEPOIS do internal_vocabulary — mesma razão: texto do modelo, não o emendado", () => {
+  it("agenda_stall roda ANTES do disclosure e DEPOIS do autonega_venda — mesma razão: texto do modelo, não o emendado", () => {
     const nomes = BEFORE_SEND_GATES.map((g) => g.name);
     expect(nomes.indexOf("agenda_stall")).toBeLessThan(nomes.indexOf("disclosure"));
-    expect(nomes.indexOf("agenda_stall")).toBe(nomes.indexOf("internal_vocabulary") + 1);
+    expect(nomes.indexOf("agenda_stall")).toBe(nomes.indexOf("autonega_venda") + 1);
+  });
+
+  it("autonega_venda roda antes do disclosure — o texto que se quer inspecionar é o do modelo", () => {
+    // Mesma razão do internal_vocabulary: o disclosure pode EMENDAR o corpo
+    // (amendBody), e vetar o texto já costurado devolveria ao modelo a culpa
+    // por uma frase que não é dele.
+    const nomes = BEFORE_SEND_GATES.map((g) => g.name);
+    expect(nomes.indexOf("autonega_venda")).toBeLessThan(nomes.indexOf("disclosure"));
+    expect(nomes.indexOf("autonega_venda")).toBe(nomes.indexOf("internal_vocabulary") + 1);
   });
 
   it("nenhum gate repetido — nome duplicado quebraria a leitura do trace", () => {

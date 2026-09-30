@@ -69,6 +69,7 @@ import { escalateLgpdVeto, isLegalBasisValid } from './lgpd/legal-basis';
 import type { LgpdInput } from './lgpd/legal-basis';
 import { detectHumanPromise } from './human-promise';
 import { detectarVazamentoInterno, renderVetoDeVazamento } from './vazamento-interno';
+import { detectarAutonegaVenda } from './autonegacao';
 // Módulo PURO de propósito (`capabilities`, não `index`): o seam não arrasta o
 // adapter — e com ele o cliente HTTP do canal — para dentro do worker.
 import { capabilitiesOf, DEFAULT_CHANNEL_PROVIDER } from '@/lib/channels/capabilities';
@@ -461,6 +462,40 @@ export const internalVocabularyGate: Gate = {
 };
 
 /**
+ * Gate que impede o AGENTE de se autonegar e de resolver a venda recusando.
+ *
+ * Medido em 2026-09-30 (número 554888348551): um caso de conta no nome de
+ * terceiro virou "essa venda eu não consigo fechar" + "não tem acordo que mude
+ * isso", e a venda foi perdida na conversa. O ver o cabeçalho de
+ * `./autonegacao.ts`, que carrega a medição e o desenho.
+ *
+ * O motivo que volta ao MODELO é instrutivo, não uma negativa do sistema: ele
+ * reescreve e tenta de novo, e a venda segue de pé. A decisão de recusar um caso
+ * específico é do DONO — e ele a faz respondendo, não transferindo para o
+ * cliente.
+ */
+const autonegaVendaGate: Gate = {
+  name: 'autonega_venda',
+  evaluate: (ctx) => {
+    const achado = detectarAutonegaVenda(ctx.body);
+    if (!achado.achou) return { pass: true };
+    return {
+      pass: false,
+      code: 'autonega_venda',
+      reason:
+        'Essa resposta desiste da venda na frente do cliente. Reescreva atendendo o que ' +
+        'ele pediu. Se este caso específico não puder ser feito, diga o que PODE ser feito ' +
+        'em vez de dizer que não faz, não peça para ele desistir e não use lei, risco ou ' +
+        'compliance como motivo para encerrar.',
+      // LOGADO: rótulos fechados das classes. Nunca o trecho — a candidata é o
+      // texto que o modelo escreveu sobre o caso do cliente, e reter o casamento
+      // seria reter dado dele.
+      detail: { classes: achado.categorias.join(','), ocorrencias: achado.categorias.length },
+    };
+  },
+};
+
+/**
  * Padrão determinístico de "prometi verificar/confirmar agenda sem checar" — verbo de
  * intenção (vou/estou/iremos) + verbo de checagem (verificar/confirmar/consultar) perto
  * (≤80 chars) de um substantivo de agenda. Curto de propósito: cobre as frases MEDIDAS em
@@ -816,7 +851,7 @@ const spinningGate: Gate = {
  * `crm_book_appointment` nas tools, então a v7 também não muda o destino de nenhum envio que
  * já existia fora desse caso — muda o TRACE e passa a medir/impedir a promessa vazia.
  */
-export const BEFORE_SEND_CHAIN_VERSION = 7;
+export const BEFORE_SEND_CHAIN_VERSION = 8;
 
 /**
  * Ordem FINAL da cadeia (F4-08/F4-09; edge-contract §before_send / blueprint órgão 5) — DADO
@@ -846,6 +881,11 @@ export const BEFORE_SEND_GATES: readonly Gate[] = [
   semanticPromiseGate,
   casePromiseGate,
   internalVocabularyGate,
+  // v8: o agente não desiste da venda na frente do cliente. Entra DEPOIS de
+  // `case_promise` e ANTES do disclosure, pelo mesmo motivo do
+  // `internal_vocabulary` — o disclosure pode emendar o corpo, e o que se quer
+  // inspecionar é o texto que o MODELO escreveu. Medido em 2026-09-30.
+  autonegaVendaGate,
   agendaStallGate,
   disclosureGate,
 ];
