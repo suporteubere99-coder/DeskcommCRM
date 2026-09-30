@@ -74,6 +74,23 @@ export interface PickToolsInput {
    * do turno à mão, esse id é traduzido para o negócio aberto dele.
    */
   contatoDoTurno?: string;
+  /**
+   * A CONVERSA que este turno atende, quando o turno é de uma conversa.
+   *
+   * `conversation_id` é o campo que o modelo NÃO consegue acertar: ele não
+   * tem de onde saber o id da conversa atual, e o schema aceita qualquer UUID
+   * — inclusive a sentinela `00000000-…`, que a higiene de aterro remove do
+   * payload e deixa o campo ausente. Medido em produção: o modelo chamou
+   * `crm_create_pix_charge` com o UUID nulo, a cobrança foi criada e o código
+   * NÃO foi enviado, porque a tool usa esse id para entregar a mensagem. A
+   * cliente cobrou duas vezes e recebeu "já te mando em seguida" duas vezes.
+   *
+   * Aqui, na fronteira, o id do turno SUBSTITUI o que o modelo mandou: é o
+   * mesmo raciocínio do `lead_id` acima, e vale para toda tool que tenha
+   * `conversation_id` no schema — a 29ª nasce certa. Consertar por handler
+   * seria consertar por instância.
+   */
+  conversationId?: string;
 }
 
 /**
@@ -205,6 +222,32 @@ function wrapMcpTool(
         (args ?? {}) as Record<string, unknown>,
       );
       const argsRecord = higiene.limpos;
+      // ── A CONVERSA DO TURNO — o modelo não tem como saber este id ─────────
+      //
+      // A sentinela `00000000-…` é a forma que o modelo diz "não sei": o
+      // schema é `z.string().uuid()`, e o padrão do Zod aceita esse UUID
+      // zerado. A higiene de aterro acima é o que normalmente a descartaria —
+      // mas ela só alcança campo OPCIONAL, porque remover um REQUIRED deixaria
+      // a chamada sem validação. `conversation_id` é required, então a
+      // sentinela chega viva ao handler, e a tool entrega a mensagem na
+      // conversa `00000000-…`. Medido em produção: a cobrança de R$ 380 foi
+      // criada e o código nunca saiu, e a cliente ouviu "já te mando" duas
+      // vezes.
+      //
+      // Aqui, na fronteira: sempre que o turno é de uma conversa, o id do
+      // turno manda. O modelo pode ter escolhido outra conversa de propósito —
+      // esta é a que ele está atendendo agora, e é a única que ele não tem como
+      // nomear sozinho. Sem `conversationId` no `PickToolsInput` (rota HTTP sob
+      // sessão, automações) o id segue como veio: ali é do chamador e está
+      // certo.
+      if (input.conversationId && "conversation_id" in def.inputSchema) {
+        if (argsRecord.conversation_id !== input.conversationId) {
+          logger.info("conversation_id do modelo substituído pela conversa do turno", {
+            tool: def.name,
+          });
+        }
+        argsRecord.conversation_id = input.conversationId;
+      }
       if ("lead_id" in argsRecord) {
         const traduzido = await leadIdDoContatoDoTurno(
           input.supabase,

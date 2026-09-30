@@ -3849,6 +3849,10 @@ async function executarTurnoDoAgente(
             organizationId: tenantId,
             jobId: preview?.runId ?? liveJob().id,
             ...(leadId ? { contactId: leadId } : {}),
+            // O modelo não sabe o id da conversa atual — e as tools que
+            // entregam mensagem por ele (a de Pix) enviam para onde este id
+            // aponta. Sem isto a cobrança é criada e o código não chega.
+            ...(input.conversationId ? { conversationId: input.conversationId } : {}),
           },
           configDoTurno,
           runLog,

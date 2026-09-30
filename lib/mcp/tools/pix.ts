@@ -74,8 +74,18 @@ export const crmCreatePixCharge: McpToolDefinition<typeof inputCriar> = {
     // nome_pagador e dado pessoal: a auditoria guarda METADADO, nunca conteúdo.
   }),
   handler: async (input, ctx) => {
+    // ── A CONVERSA, quando o handler sabe qual é ───────────────────────────
+    //
+    // `conversation_id` chega do modelo, e o modelo não tem como saber o id da
+    // conversa atual: ele inventa a sentinela `00000000-…`. O runtime já
+    // substitui esse valor na fronteira (`lib/ai/runtime/tools.ts`), e esta
+    // linha é a rede debaixo dele — o código do Pix é entregue na conversa que
+    // este id aponta, e mandá-lo para a errada é cobrar a pessoa errada sem que
+    // ela perceba. Fora do turno do agente (rota HTTP, automações) não há
+    // conversa do turno, e o id do argumento segue sendo o único disponível.
+    const conversationId = ctx.conversationId ?? input.conversation_id;
     const referencia =
-      input.referencia?.trim() || `crm-${input.conversation_id}-${Date.now().toString(36)}`;
+      input.referencia?.trim() || `crm-${conversationId}-${Date.now().toString(36)}`;
 
     try {
       const tx = await criarCobrancaPix({
@@ -104,10 +114,20 @@ export const crmCreatePixCharge: McpToolDefinition<typeof inputCriar> = {
       let envio: unknown = null;
       let enviada = false;
       if (input.enviar_ao_cliente) {
+        // A conversa RESOLVIDA, não a do argumento: com a sentinela do modelo o
+        // envio vai para a conversa `00000000-…` e o código some. É a cobrança
+        // criada sem o código entregue, que é o defeito medido.
+        const destino = conversationId !== input.conversation_id ? conversationId : input.conversation_id;
+        if (conversationId !== input.conversation_id) {
+          logger.warn("[pix] conversa do modelo substituída pela do turno", {
+            modelo: input.conversation_id,
+            turno: conversationId,
+          });
+        }
         try {
           envio = await crmSendWhatsappMessage.handler(
             {
-              conversation_id: input.conversation_id,
+              conversation_id: destino,
               body: tx.copyPaste,
               type: "text" as const,
               idempotency_key: `pix-codigo-${referencia}`,

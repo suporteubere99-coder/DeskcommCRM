@@ -128,6 +128,28 @@ export const ALVO_DE_FUNIL: Record<string, AlvoDeFunil> = {
 
   // ---- não têm funil, e isso é declarado ----
   crm_send_whatsapp_message: "sem_funil",
+  // ---- Pix e voz (0496) ----
+  //
+  // Cobrar é escrever no dinheiro, e por isso o `sem_funil` delas merecia ser
+  // lido como PermissionGranted: não é. Medido: `crm_create_pix_charge` é
+  // `category: "write"` e NUNCA entrou no `ALVO_DE_FUNIL`, então a vacuidade
+  // acima recusava a chamada em TODO turno, com `ferramenta_nao_classificada` —
+  // a cliente viu "tô gerando teu Pix, já te mando aqui" e o código nunca saiu,
+  // porque o handler não era chamado uma vez sequer.
+  //
+  // O alvo é `sem_funil` e a classificação é o ponto: operar por
+  // `conversation_id` e não tocar `crm_leads` NÃO É classificação vazia — é a
+  // mesma razão de `crm_send_whatsapp_message` acima, que também entrega
+  // mensagem e também não mexe em card. O que protege a cobrança é o RBAC
+  // (`requiresRole: agent`) e o escopo `mcp:write` do token efêmero, mais o
+  // fato de o `valor_reais` vir do valor que o agenteCombinou com o cliente.
+  // Declarar `funil_vem_do_lead` seria teatro: a tool não recebe `lead_id`.
+  crm_create_pix_charge: "sem_funil",
+  // Leitura (`category: "read"`): o gate nem é consultado, e entra aqui para o
+  // teste de vacuidade saber que foi pensada.
+  crm_check_pix_payment: "sem_funil",
+  // Áudio enviado ao cliente: mesma família de `crm_send_whatsapp_message`.
+  crm_send_voice_message: "sem_funil",
   // Abre conversa nova (contato pode nem ter negócio ainda) e manda a primeira
   // mensagem — não recebe `lead_id` nem `pipeline_id`. Como as de configuração
   // logo abaixo, a barreira dela é OUTRA: `requiresRole: manager` +

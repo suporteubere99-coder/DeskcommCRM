@@ -57,7 +57,7 @@ export interface McpTurnTools {
 export async function buildMcpTurnTools(
   cfg: CrmEdgeConfig,
   /** `contactId`: o contato do turno — ver `contatoDoTurno` em `lib/ai/runtime/tools.ts`. */
-  ids: { organizationId: string; jobId: string; contactId?: string },
+  ids: { organizationId: string; jobId: string; contactId?: string; conversationId?: string },
   agentConfig: PublishedAgentConfig,
   log: Logger,
   options?: { readOnly: boolean },
@@ -96,6 +96,10 @@ export async function buildMcpTurnTools(
   const claim = originJob ? claimOfJob(originJob) : undefined;
   const ctx: McpContext = {
     sourceJobId: ids.jobId,
+    // A conversa do turno, para as tools que entregam mensagem por ela. Vem do
+    // runtime e nunca dos argumentos do modelo — ver `conversationId` em
+    // `lib/mcp/types.ts`.
+    ...(ids.conversationId ? { conversationId: ids.conversationId } : {}),
     ...(originJob?.id === ids.jobId && boundary && claim
       ? { meetingBooking: { sourceJobId: originJob.id, claim, boundary } }
       : {}),
@@ -143,6 +147,9 @@ export async function buildMcpTurnTools(
     modulosLigados: await modulosLigados(cfg.supabase),
     capacidadesLigadas: await capacidadesDaOrganizacao(cfg.supabase, ids.organizationId),
     ...(ids.contactId ? { contatoDoTurno: ids.contactId } : {}),
+    // A conversa do turno: as tools que entregam mensagem por `conversation_id`
+    // (a de Pix entre elas) recebem o id real em vez do que o modelo inventou.
+    ...(ids.conversationId ? { conversationId: ids.conversationId } : {}),
   });
 
   return {

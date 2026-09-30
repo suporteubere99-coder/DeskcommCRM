@@ -19,6 +19,17 @@ export interface McpContext {
   idempotencyKey?: string;
   /** Job estável do runtime in-process; nunca vem dos argumentos da tool. */
   sourceJobId?: string;
+  /**
+   * A conversa que ESTE turno atende, quando ele é o turno de uma conversa.
+   *
+   * Nunca vem dos argumentos da tool: o modelo não tem como saber o id da
+   * conversa em que está, e inventa a sentinela `00000000-…` — que o schema
+   * aceita. Toda tool que entrega mensagem por `conversation_id` precisa do id
+   * real, e o único lugar que o tem é o runtime. Fora do turno do agente
+   * (rota HTTP sob sessão, automações) o campo fica ausente e a tool usa o id
+   * do argumento, que ali é do chamador e está certo.
+   */
+  conversationId?: string;
   organizationId: string;
   role: Role;
   actor: Actor;
