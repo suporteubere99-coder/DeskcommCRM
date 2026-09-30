@@ -246,6 +246,38 @@ const schema = z.object({
   // da OpenAI da organização — assim como `TRANSCRIPTION_MODEL`. Leitura
   // tolerante em `idiomasDaTranscricao` (grafia errada não derruba o worker).
   TRANSCRIPTION_LANGUAGES: z.string().optional().default(""),
+  // ─── MisticPay (recebimento via PIX) ────────────────────────────────────
+  // A chave de acesso `pk_…`/`sk_…` como valor pronto de `Authorization: Basic …`,
+  // ou o par separado nas duas linhas abaixo (o código monta o Basic). Vazio é
+  // AUSENTE, não inválido: sem isso as tools de Pix respondem
+  // "não configurado" e o agente avisa o cliente em vez de inventar um código.
+  MISTICPAY_API_KEY: z.string().optional().default(""),
+  MISTICPAY_CLIENT_ID: z.string().optional().default(""),
+  MISTICPAY_CLIENT_SECRET: z.string().optional().default(""),
+  // Documento do PAGADOR das cobranças: o CPF/CNPJ do TITULAR da conta, ou seja,
+  // o recebedor — nunca o do cliente. A MisticPay exige `payerDocument` e recusa
+  // a cobrança sem ele (medido: `400 TRANSACTION_FIELDS_REQUIRED`), e o jeito de
+  // não pedir documento ao cliente é usar o seu. Vazio = a tool avisa que falta
+  // configurar, em vez de gerar cobrança que não existe.
+  MISTICPAY_PAYER_DOCUMENT: z.string().optional().default(""),
+  // URL que a MisticPay chama quando o pagamento muda de estado. Opcional:
+  // sem ela a confirmação continua funcionando por crm_check_pix_payment.
+  MISTICPAY_WEBHOOK_URL: z.string().optional().default(""),
+  // Segredo do path da webhook de depósito: `/api/v1/webhooks/misticpay/<este
+  // valor>`. É o que separa "a MisticPay avisa" de "qualquer POST na internet
+  // abre aviso na sua central" — a MisticPay não assina o corpo, então o token
+  // na URL é a autenticação real. Gere com `openssl rand -hex 32`.
+  MISTICPAY_WEBHOOK_TOKEN: z.string().optional().default(""),
+  // Organização que esta instalação representa. A webhook não tem sessão: o
+  // vínculo com o tenant vem daqui, nunca do corpo do POST — casar pelo e-mail
+  // do titular seria adivinhar qual organização é.
+  MISTICPAY_ORGANIZATION_ID: z.string().optional().default(""),
+  // ─── ElevenLabs (texto -> áudio para o cliente) ──────────────────────────
+  ELEVENLABS_API_KEY: z.string().optional().default(""),
+  // Voice ID da voz clonada/treinada na conta. Vazio = a tool não envia áudio
+  // (o agente volta para texto) em vez de gerar com uma voz que não é a dele.
+  ELEVENLABS_VOICE_ID: z.string().optional().default(""),
+  ELEVENLABS_MODEL_ID: z.string().optional().default("eleven_v4"),
   // Endereço da API do Jev (TypeSafe AI). Vazio é ausente: vale
   // https://api.typesafe.ai. Existe para o dublê do e2e — a CHAVE nunca vem
   // daqui, é por organização (BYOK). Quem lê é `baseDaApiDoJev()`, em

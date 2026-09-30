@@ -59,4 +59,34 @@ export const TOOLS_COMERCIO = declararTools([
     risco: "seguro",
     pacotes: ["organizar", "atender"],
   },
+  {
+    name: "crm_create_pix_charge",
+    category: "write",
+    rotulo: "Gerar a cobrança Pix para o cliente",
+    explicacao:
+      "Cria a cobrança Pix no valor combinado e envia o código copia e cola direto para o cliente, numa mensagem separada. Não pede CPF nem nenhum dado do cliente. O assistente não escreve o código por conta própria: um código reescrito deixa de pagar.",
+    oQueToca: "Cobrança e pagamento do cliente",
+    risco: "critico",
+    pacotes: ["vender"],
+  },
+  {
+    name: "crm_check_pix_payment",
+    category: "read",
+    rotulo: "Conferir se o Pix foi pago",
+    explicacao:
+      "Consulta no banco se o pagamento da cobrança Pix caiu. O assistente só confirma o pagamento ao cliente depois que esta consulta responde que sim.",
+    oQueToca: "Cobrança e pagamento do cliente",
+    risco: "seguro",
+    pacotes: ["vender"],
+  },
+  {
+    name: "crm_send_voice_message",
+    category: "write",
+    rotulo: "Falar com o cliente por áudio",
+    explicacao:
+      "Manda um áudio na voz configurada para o assistente, para quando o cliente preferir ouvir. Se não houver áudio configurado, o assistente avisa e responde por texto — nunca inventa uma voz.",
+    oQueToca: "Conversa com o cliente",
+    risco: "atencao",
+    pacotes: ["atender", "vender"],
+  },
 ]);

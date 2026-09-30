@@ -51,6 +51,8 @@ import {
   crmSaveOrgMemory,
 } from "./evolucao";
 import { crmListContactOrders, crmSearchProducts } from "./comercio";
+import { crmCreatePixCharge, crmCheckPixPayment } from "./pix";
+import { crmSendVoiceMessage } from "./voz";
 import { crmGetHonorariosContrato, crmListHonorariosParcelas } from "./honorarios";
 import { crmDescribeExternalData, crmQueryExternalData } from "./dados-externos";
 import { crmListPrivacyRequests } from "./privacidade";
@@ -127,6 +129,7 @@ export const allTools: ReadonlyArray<McpToolDefinition> = [
   crmDescribeExternalData,
   crmQueryExternalData,
   crmListPrivacyRequests,
+  crmCheckPixPayment,
   // read — organizar a operação (W4)
   crmListStages,
   crmListTags,
@@ -176,6 +179,8 @@ export const allTools: ReadonlyArray<McpToolDefinition> = [
   crmCloseHumanCase,
   crmResumeAiAttendance,
   crmDraftProposal,
+  crmCreatePixCharge,
+  crmSendVoiceMessage,
   // handoff (special)
   crmRequestHumanHandoff,
 ] as unknown as ReadonlyArray<McpToolDefinition>;

@@ -10,7 +10,7 @@ import "@testing-library/jest-dom/vitest";
  *
  * Um agente de atendimento rodou com o prompt cortado no meio de uma frase, e
  * ninguém soube. As CINCO versões salvas tinham exatamente 19.999 caracteres —
- * o teto é 20.000 — e a última terminava em "• Nunca".
+ * o teto é 50.000 — e a última terminava em "• Nunca".
  *
  * A causa: o `<Textarea>` declarava `maxLength={20000}`. O navegador aplica esse
  * atributo na COLAGEM, sem evento, sem erro e sem aviso: o que passa do limite
@@ -83,25 +83,25 @@ describe("editor de instruções do agente", () => {
 
   it("guarda o texto inteiro quando ele passa do limite, em vez de comer o fim", () => {
     const prompt = montar();
-    const gigante = "a".repeat(20_500);
+    const gigante = "a".repeat(50_500);
     fireEvent.change(prompt, { target: { value: gigante } });
     expect(
       prompt.value.length,
-      "o campo comeu o fim do texto — é exatamente assim que um prompt vira 19.999 caracteres",
-    ).toBe(20_500);
+      o texto comeu o fim do texto — é exatamente assim que um prompt vira 49.999 caracteres
+    ).toBe(50_500);
   });
 
   it("mostra o tamanho contra o limite enquanto o autor escreve", () => {
     // O aviso que chega ANTES do erro: quem cola um texto grande vê na hora que
     // ele não cabe, em vez de descobrir no salvamento — ou nunca.
     const prompt = montar();
-    fireEvent.change(prompt, { target: { value: "a".repeat(20_500) } });
-    expect(screen.getByTestId("contador-do-prompt")).toHaveTextContent("20.500/20.000");
+    fireEvent.change(prompt, { target: { value: "a".repeat(50_500) } });
+    expect(screen.getByTestId("contador-do-prompt")).toHaveTextContent("50.500/50.000");
   });
 
   it("recusa o salvamento dizendo quanto passou", () => {
     const prompt = montar();
-    fireEvent.change(prompt, { target: { value: "a".repeat(20_500) } });
+    fireEvent.change(prompt, { target: { value: "a".repeat(50_500) } });
     fireEvent.click(screen.getByRole("button", { name: /salvar|criar/i }));
     expect(
       screen.getByText(/corte 500 para conseguir salvar/i),
@@ -110,12 +110,12 @@ describe("editor de instruções do agente", () => {
   });
 
   it("mede o texto como o servidor mede, sem contar espaço de sobra", () => {
-    // O servidor grava `z.string().trim().max(20000)` — o trim roda ANTES do
+    // O servidor grava `z.string().trim().max(50000)` — o trim roda ANTES do
     // max. Se a tela contasse os brancos, ela barraria texto que o servidor
     // aceita, e o autor ficaria preso sem entender o motivo.
     const prompt = montar();
-    fireEvent.change(prompt, { target: { value: "a".repeat(20_000) + "\n\n   " } });
-    expect(screen.getByTestId("contador-do-prompt")).toHaveTextContent("20.000/20.000");
+    fireEvent.change(prompt, { target: { value: "a".repeat(50_000) + "\n\n   " } });
+    expect(screen.getByTestId("contador-do-prompt")).toHaveTextContent("50.000/50.000");
     fireEvent.click(screen.getByRole("button", { name: /salvar|criar/i }));
     expect(screen.queryByText(/conseguir salvar/i)).not.toBeInTheDocument();
   });
