@@ -42,6 +42,9 @@ interface LinhaDeKnobs {
   jitter_max_ms: number | null;
   window_start_hour: number | null;
   window_end_hour: number | null;
+  /** Janela da RESPOSTA (0495). Ausente/null = herda a janela de disparo. */
+  reengajar_start_hour: number | null;
+  reengajar_end_hour: number | null;
   allow_sunday: boolean | null;
   timezone: string | null;
   warmup_daily_caps: unknown;
@@ -61,7 +64,7 @@ export async function knobsDoCanal(
     admin
       .from("channel_knobs")
       .select(
-        "throttle_ms, jitter_max_ms, window_start_hour, window_end_hour, allow_sunday, timezone, warmup_daily_caps",
+        "throttle_ms, jitter_max_ms, window_start_hour, window_end_hour, reengajar_start_hour, reengajar_end_hour, allow_sunday, timezone, warmup_daily_caps",
       )
       .eq("organization_id", organizationId)
       .eq("channel_session_id", channelSessionId)
@@ -91,6 +94,12 @@ export async function knobsDoCanal(
     jitterMaxMs: linha.jitter_max_ms ?? PACING_DEFAULTS.jitterMaxMs,
     windowStartHour: linha.window_start_hour ?? PACING_DEFAULTS.windowStartHour,
     windowEndHour: linha.window_end_hour ?? PACING_DEFAULTS.windowEndHour,
+    // Mesma regra do store do engine: coluna vazia herda a janela de DISPARO.
+    // A automação chama `janelaDeEnvioAberta` sem o terceiro argumento, então lê
+    // `window*` — o par de resposta entra aqui para o `PacingKnobs` ficar
+    // completo, não para a cutucar abrir.
+    reengajarStartHour: linha.reengajar_start_hour ?? linha.window_start_hour ?? PACING_DEFAULTS.reengajarStartHour,
+    reengajarEndHour: linha.reengajar_end_hour ?? linha.window_end_hour ?? PACING_DEFAULTS.reengajarEndHour,
     allowSunday: linha.allow_sunday ?? PACING_DEFAULTS.allowSunday,
     timezone: fusoDaJanela(linha.timezone, fusoDaOrg),
     warmupDailyCaps: caps ?? PACING_DEFAULTS.warmupDailyCaps,
