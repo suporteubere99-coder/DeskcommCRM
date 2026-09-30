@@ -72,6 +72,11 @@ CRONS="
 # número: é o cron que dá a cadência base, e o ritmo da campanha e do canal
 # (channel_knobs + pacing_ledger) só sabem torná-la mais lenta.
 * * * * *|45|api/v1/cron/campaign-worker
+# O RODÍZIO DE RETORNO. Uma vez ao dia, na abertura da janela: inscreve 20
+# clientes por número, um a cada 45 min, das 7h às 22h. A inscrição entrega UMA
+# mensagem e morre — quem repete é esta linha, todo dia, até a base acabar.
+# Fora da janela a rota não inscreve nada (ver `lib/rodizio/rodizar.ts`).
+5 7 * * *|120|api/v1/cron/rodizio-diario
 */5 * * * *|60|api/v1/cron/webhook-log-retention
 */5 * * * *|45|api/v1/cron/channel-health
 */10 * * * *|60|api/v1/cron/contact-avatars

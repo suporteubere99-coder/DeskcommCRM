@@ -915,6 +915,9 @@ export const AUDIT_ACTIONS = [
   // Rodada do cron que MEXEU em alguma campanha (enviou, pulou, concluiu,
   // promoveu agendada). Rodada vazia não audita — o critério do `CLAUDE.md`.
   "cron.campaign_worker",
+  // Rodada do cron que INSCRIBEU a rodada do dia do rodízio de retorno. Audita
+  // só quando escreveu: rodada que não inscreveu ninguém é leitura.
+  "cron.rodizio_diario",
   // Lista de exclusão da operação (migration 0376). Audita porque é decisão que
   // tira alguém de todo envio futuro — "quem tirou este número, e quando?"
   // precisa de resposta. O telefone NÃO entra no payload: só os últimos dígitos.
